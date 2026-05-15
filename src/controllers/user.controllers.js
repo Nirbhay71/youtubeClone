@@ -8,12 +8,15 @@ import bcrypt from "bcrypt"
 const generateAccessTokenAndRefreshToken = async(userId)=>{
     try {
         const user = await User.findById(userId)
+        
         const accesstoken = user.generateAccessToken();
         const refreshtoken = user.generateRefreshToken();
+        // console.log(accesstoken, "     ", refreshtoken);
         user.refreshToken = refreshtoken;
-        await user.save({validateBeforeSave : false})
+        await user.save({validateBeforeSave : false});
         return {
-            accesstoken, refreshtoken
+            "accesstoken": accesstoken,
+            "refreshtoken": refreshtoken
         }
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating refresh and access token")
@@ -82,6 +85,8 @@ const registerUser = asyncHandler( async (req,res)=>{
 })
 
 const loginUser = asyncHandler(async (req,res)=>{
+    console.log(req.body);
+    
     // 1.
     const {email,password} = req.body;
 
@@ -107,8 +112,14 @@ const loginUser = asyncHandler(async (req,res)=>{
     }
 
     // 5.
-    const { accessToken, refreshToken } =
-    await generateAccessAndRefreshTokens(userInDB._id)
+    const responce =
+    await generateAccessTokenAndRefreshToken(userInDB._id)
+
+    console.log(responce);
+
+    const accessToken = responce.accesstoken
+    const refreshToken = responce.refreshtoken
+    
 
     const options = {
         httpOnly : true,
@@ -158,8 +169,8 @@ const logoutUser = asyncHandler(async (req,res)=>{
 
     return res
     .status(200)
-    .clearCookies("accessToken",options)
-    .clearCookies("refreshToken",options)
+    .clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
     .json(
         new ApiResponse(
             200,
